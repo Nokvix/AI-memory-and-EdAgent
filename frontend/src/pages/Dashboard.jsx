@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { Link } from "react-router-dom";
 
 const StatusBadge = ({ status }) => {
     const styles = {
@@ -60,7 +61,14 @@ export const Dashboard = () => {
             <tbody className="divide-y divide-gray-100">
               {companies.map((company) => (
                 <tr key={company.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-bold">{company.name}</td>
+                  <td className="px-6 py-4 font-bold">
+                    <Link
+                      to={`/company/${company.id}`}
+                      className="font-bold text-gray-900 hover:text-blue-600 block"
+                    >
+                      {company.name}
+                    </Link>
+                  </td>
                   <td className="px-6 py-4">{company.score}</td>
                   <td className="px-6 py-4"><StatusBadge status={company.status} /></td>
                 </tr>

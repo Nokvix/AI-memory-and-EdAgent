@@ -17,4 +17,15 @@ export const api = {
         const res = await fetch(`${BASE_URL}/companies/top-20`);
         return res.json();
     },
+
+    getCompanyById: async (id) => {
+        if (USE_MOCK) {
+            await delay(300);
+            const company = companies.find(c => c.id === Number(id));
+            if (!company) return { status: 'error', error_code: 'COMPANY_NOT_FOUND', message: 'Компания не найдена' };
+            return { status: 'success', data: company };
+        }
+        const res = await fetch(`${BASE_URL}/companies/${id}`);
+        return res.json();
+    },
 };

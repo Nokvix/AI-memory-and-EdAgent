@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route  } from "react-router-dom";
 import { Header } from "./components/Header";
 import { Dashboard } from "./pages/Dashboard";
+import { CompanyDetail } from "./pages/CompanyDetail";
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/company/:id" element={<CompanyDetail />} />
         </Routes>
       </div>
     </BrowserRouter>
