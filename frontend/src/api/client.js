@@ -28,4 +28,30 @@ export const api = {
         const res = await fetch(`${BASE_URL}/companies/${id}`);
         return res.json();
     },
+
+    getCompanies: async (params = {}) => {
+        if (USE_MOCK) {
+            await delay(500);
+            let data = [...companies];
+
+            if (params.status) data = data.filter(c => c.status === params.status);
+            if (params.industry) data = data.filter(c => c.industry === params.industry);
+            if (params.min_score) data = data.filter(c => c.score >= params.min_score);
+
+            // Сортировка
+            if (params.sort_by === 'score_desc') data.sort((a, b) => b.score - a.score);
+            if (params.sort_by === 'score_asc') data.sort((a, b) => a.score - b.score);
+
+            return {
+                status: 'success',
+                data: data,
+                total: data.length,
+                page: params.page || 1,
+                limit: params.limit || 20
+            };
+        }
+        const query = new URLSearchParams(params).toString();
+        const res = await fetch(`${BASE_URL}/companies?${query}`);
+        return res.json();
+    },
 };
