@@ -10,12 +10,14 @@ import {
   Clock,
   Check,
 } from "lucide-react";
+import { LetterModal } from "../components/LetterModal";
 
 export const CompanyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLetterModal, setShowLetterModal] = useState(false);
 
   useEffect(() => {
     loadCompany();
@@ -114,7 +116,7 @@ export const CompanyDetail = () => {
             </h3>
             <div className="flex flex-col gap-3">
               <button
-                // onClick={() => }
+                onClick={() => setShowLetterModal(true)}
                 className="w-full bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 py-2 rounded-lg font-medium flex justify-center items-center gap-2 transition"
               >
                 <Mail size={16} /> Работа с письмом
@@ -181,6 +183,14 @@ export const CompanyDetail = () => {
           </div>
         )}
       </div>
+
+      {showLetterModal && (
+        <LetterModal
+          company={company}
+          onClose={() => setShowLetterModal(false)}
+          onUpdate={loadCompany}
+        />
+      )}
     </div>
   );
 };

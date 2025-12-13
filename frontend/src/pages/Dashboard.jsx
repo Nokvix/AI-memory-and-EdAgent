@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Link } from "react-router-dom";
 import { ExternalLink, Mail, Filter } from "lucide-react";
+import { LetterModal } from "../components/LetterModal";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -189,6 +190,14 @@ export const Dashboard = () => {
             </div>
           )}
         </div>
+      )}
+
+      {selectedCompany && (
+        <LetterModal
+          company={selectedCompany}
+          onClose={() => setSelectedCompany(null)}
+          onUpdate={loadData}
+        />
       )}
     </div>
   );

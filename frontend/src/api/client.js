@@ -1,4 +1,4 @@
-import { companies } from './mockData';
+import { companies, letters } from './mockData';
 
 const USE_MOCK = true;
 const BASE_URL = 'http://localhost:8000/api';
@@ -52,6 +52,42 @@ export const api = {
         }
         const query = new URLSearchParams(params).toString();
         const res = await fetch(`${BASE_URL}/companies?${query}`);
+        return res.json();
+    },
+
+    getLetter: async (companyId) => {
+        if (USE_MOCK) {
+            await delay(300);
+            const letter = letters[companyId];
+            if (!letter) return { status: 'success', data: null };
+            return { status: 'success', data: letter };
+        }
+        const res = await fetch(`${BASE_URL}/letters/${companyId}`);
+        return res.json();
+    },
+
+    generateLetter: async (companyId, template = 'formal') => {
+        if (USE_MOCK) {
+            await delay(800);
+            const company = companies.find(c => c.id === Number(companyId));
+            if (!company) return { status: 'error', message: 'Компания не найдена' };
+
+            const newLetter = {
+                id: Date.now(),
+                company_id: Number(companyId),
+                template,
+                subject: `Предложение о партнёрстве для ${company.name}`,
+                body: template === 'formal'
+                    ? `Здравствуйте, коллеги из ${company.name}!\n\nМы изучили ваши вакансии (всего ${company.vacancy_count}) и заметили, что вы используете ${company.main_skills.join(", ")}.\n\nПредлагаем обсудить сотрудничество.`
+                    : `Привет, ${company.name}!\n\nВидим, что вы ищете крутых спецов по ${company.main_skills.join(", ")}. У нас они есть!\n\nДавайте пообщаемся?`,
+                status: 'draft',
+                created_at: new Date().toISOString()
+            };
+
+            letters[companyId] = newLetter;
+            return { status: 'success', data: newLetter, message: 'Письмо сгенерировано' };
+        }
+        const res = await fetch(`${BASE_URL}/letters/generate/${companyId}?template=${template}`, { method: 'POST' });
         return res.json();
     },
 };
