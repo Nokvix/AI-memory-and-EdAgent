@@ -90,4 +90,97 @@ export const api = {
         const res = await fetch(`${BASE_URL}/letters/generate/${companyId}?template=${template}`, { method: 'POST' });
         return res.json();
     },
+
+    approveCompany: async (id, comment = "") => {
+        if (USE_MOCK) {
+            await delay(400);
+            const company = companies.find(c => c.id === Number(id));
+            if (company) {
+                company.status = 'approved';
+                company.updated_at = new Date().toISOString();
+            }
+            return { status: 'success', data: company, message: 'Компания одобрена' };
+        }
+        const res = await fetch(`${BASE_URL}/companies/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comment })
+        });
+        return res.json();
+    },
+
+    rejectCompany: async (id, reason = "") => {
+        if (USE_MOCK) {
+            await delay(400);
+            const company = companies.find(c => c.id === Number(id));
+            if (company) {
+                company.status = 'rejected';
+                company.updated_at = new Date().toISOString();
+            }
+            return { status: 'success', data: company, message: 'Компания отклонена' };
+        }
+        const res = await fetch(`${BASE_URL}/companies/${id}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        return res.json();
+    },
+
+    approveLetter: async (letterId, bodyText) => {
+        if (USE_MOCK) {
+            await delay(500);
+            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
+
+            if (key) {
+                letters[key].status = 'approved';
+                if (bodyText) letters[key].body = bodyText;
+                letters[key].approved_at = new Date().toISOString();
+            }
+            return { status: 'success', data: key ? letters[key] : null, message: 'Письмо одобрено' };
+        }
+        const res = await fetch(`${BASE_URL}/letters/${letterId}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body: bodyText })
+        });
+        return res.json();
+    },
+
+    rejectLetter: async (letterId, reason = "") => {
+        if (USE_MOCK) {
+            await delay(300);
+            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
+            if (key) {
+                letters[key].status = 'rejected';
+            }
+            return { status: 'success', data: { id: letterId, status: 'rejected' }, message: 'Письмо отклонено' };
+        }
+        const res = await fetch(`${BASE_URL}/letters/${letterId}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        return res.json();
+    },
+
+    updateLetter: async (letterId, body) => {
+        if (USE_MOCK) {
+            await delay(300);
+            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
+            if (key) {
+                letters[key].body = body;
+                letters[key].status = 'draft';
+                letters[key].updated_at = new Date().toISOString();
+                return { status: 'success', data: letters[key], message: 'Письмо обновлено' };
+            }
+            return { status: 'error', message: 'Письмо не найдено' };
+        }
+        const res = await fetch(`${BASE_URL}/letters/${letterId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body })
+        });
+        return res.json();
+    },
 };

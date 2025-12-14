@@ -32,6 +32,23 @@ export const CompanyDetail = () => {
     setLoading(false);
   };
 
+  const handleApproveCompany = async () => {
+    setLoading(true);
+    await api.approveCompany(id);
+    await loadCompany();
+    setLoading(false);
+  };
+
+  const handleRejectCompany = async () => {
+    const reason = prompt("Укажите причину отказа:");
+    if (!reason) return;
+
+    setLoading(true);
+    await api.rejectCompany(id, reason);
+    await loadCompany();
+    setLoading(false);
+  };
+
   if (loading && !company)
     return <div className="text-center py-20">Загрузка...</div>;
   if (!company)
@@ -126,7 +143,7 @@ export const CompanyDetail = () => {
                 {/* Кнопка Одобрить (скрываем, если уже одобрено) */}
                 {company.status !== "approved" && (
                   <button
-                    // onClick={}
+                    onClick={handleApproveCompany}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium flex justify-center items-center gap-2 transition shadow-sm"
                   >
                     <Check size={16} /> Одобрить
@@ -136,7 +153,7 @@ export const CompanyDetail = () => {
                 {/* Кнопка Отказать (скрываем, если уже отказано) */}
                 {company.status !== "rejected" && (
                   <button
-                    // onClick={}
+                    onClick={handleRejectCompany}
                     className="flex-1 border border-red-200 text-red-600 hover:bg-red-50 py-2 rounded-lg font-medium flex justify-center items-center gap-2 transition"
                   >
                     <XCircle size={16} /> Отказать
