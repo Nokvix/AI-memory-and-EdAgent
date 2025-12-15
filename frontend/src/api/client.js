@@ -1,4 +1,4 @@
-import { companies, letters } from './mockData';
+import { companies, letters, emailStatuses } from './mockData';
 
 const USE_MOCK = true;
 const BASE_URL = 'http://localhost:8000/api';
@@ -180,6 +180,48 @@ export const api = {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ body })
+        });
+        return res.json();
+    },
+
+    sendEmail: async (companyId, email) => {
+        if (USE_MOCK) {
+            await delay(1000);
+            const company = companies.find(c => c.id === Number(companyId));
+            const letter = letters[companyId];
+
+            if (!letter || letter.status !== 'approved') {
+                return { status: 'error', error_code: 'LETTER_NOT_APPROVED', message: 'Письмо не одобрено' };
+            }
+
+            if (company) company.status = 'sent';
+            if (letter) letter.sent_at = new Date().toISOString();
+
+            emailStatuses[companyId] = {
+                company_id: companyId,
+                email: email || "hr@example.com",
+                sent_at: new Date().toISOString(),
+                delivery_status: "delivered",
+                opened_at: null,
+                clicked_at: null
+            };
+
+            return {
+                status: 'success',
+                data: {
+                    id: 123,
+                    company_id: companyId,
+                    email: email,
+                    sent_at: new Date().toISOString(),
+                    message_id: `mock_id_${Date.now()}`
+                },
+                message: 'Письмо успешно отправлено'
+            };
+        }
+        const res = await fetch(`${BASE_URL}/emails/send/${companyId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
         });
         return res.json();
     },

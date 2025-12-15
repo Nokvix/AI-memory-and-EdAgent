@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route  } from "react-router-dom";
 import { Header } from "./components/Header";
 import { Dashboard } from "./pages/Dashboard";
 import { CompanyDetail } from "./pages/CompanyDetail";
+import { ApprovedList } from "./pages/ApprovedList";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/company/:id" element={<CompanyDetail />} />
+          <Route path="/approved" element={<ApprovedList />} />
         </Routes>
       </div>
     </BrowserRouter>
