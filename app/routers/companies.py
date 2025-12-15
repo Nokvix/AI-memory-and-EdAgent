@@ -3,7 +3,7 @@ Companies Router - Эндпоинты для работы с компаниям�
 """
 
 from fastapi import APIRouter, Query, Depends, HTTPException, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 import logging
 
@@ -13,7 +13,8 @@ from app.schemas.schemas import (
     CompanyResponse,
     CompanyApproveRequest,
     CompanyRejectRequest,
-    PaginatedCompaniesResponse
+    PaginatedCompaniesResponse,
+    VacancyResponse
 )
 # from test_companies_api import company
 
@@ -53,7 +54,7 @@ async def get_company_details(id: int, db: Session = Depends(get_db)):
     Args:
         id: ID компании
     """
-    company = db.query(Company).filter(Company.id == id).first()
+    company = db.query(Company).options(joinedload(Company.vacancies)).filter(Company.id == id).first()
     
     if not company:
         raise HTTPException(
@@ -69,7 +70,15 @@ async def get_company_details(id: int, db: Session = Depends(get_db)):
         score=company.score,
         vacancy_count=company.vacancy_count,
         status=company.status,
-        main_skills=company.main_skills if company.main_skills else []
+        main_skills=company.main_skills if company.main_skills else [],
+        vacancies=[
+            VacancyResponse(
+                id=v.id,
+                position=v.position,
+                url=v.url,
+                skills=v.skills if v.skills else []
+            ) for v in company.vacancies
+        ]
     )
 
 

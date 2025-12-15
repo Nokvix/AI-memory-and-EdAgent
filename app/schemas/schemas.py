@@ -3,6 +3,15 @@ from typing import List, Optional
 from datetime import datetime
 
 
+class VacancyResponse(BaseModel):
+    id: int
+    position: str
+    url: str
+    skills: List[str] = []
+    class Config:
+        from_attributes = True
+
+
 class CompanyResponse(BaseModel):
     id: int
     name: str
@@ -12,6 +21,7 @@ class CompanyResponse(BaseModel):
     vacancy_count: int
     status: str
     main_skills: List[str] = []
+    vacancies: List[VacancyResponse] = []
 
     class Config:
         from_attributes = True
