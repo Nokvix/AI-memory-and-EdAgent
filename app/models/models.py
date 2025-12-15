@@ -45,6 +45,8 @@ class Letter(Base):
     status = Column(String, default="draft")
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
     sent_at = Column(DateTime, nullable=True)
 
     company = relationship("Company", back_populates="letters")
