@@ -7,6 +7,7 @@ class CompanyResponse(BaseModel):
     id: int
     name: str
     url: str
+    industry: str
     score: float
     vacancy_count: int
     status: str

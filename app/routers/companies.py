@@ -15,6 +15,7 @@ from app.schemas.schemas import (
     CompanyRejectRequest,
     PaginatedCompaniesResponse
 )
+# from test_companies_api import company
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ async def get_top_companies(db: Session = Depends(get_db)):
             id=company.id,
             name=company.name,
             url=company.url,
+            industry=company.industry,
             score=company.score,
             vacancy_count=company.vacancy_count,
             status=company.status,
@@ -62,6 +64,8 @@ async def get_company_details(id: int, db: Session = Depends(get_db)):
     return CompanyResponse(
         id=company.id,
         name=company.name,
+        url=company.url,
+        industry=company.industry,
         score=company.score,
         vacancy_count=company.vacancy_count,
         status=company.status,
@@ -214,6 +218,7 @@ async def get_companies(
             id=company.id,
             name=company.name,
             url=company.url,
+            industry=company.industry,
             score=company.score,
             vacancy_count=company.vacancy_count,
             status=company.status,
