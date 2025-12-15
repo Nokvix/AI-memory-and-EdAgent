@@ -3,10 +3,6 @@ from typing import List, Optional
 from datetime import datetime
 
 
-# ============================================================
-# COMPANY SCHEMAS
-# ============================================================
-
 class CompanyResponse(BaseModel):
     id: int
     name: str
@@ -19,9 +15,23 @@ class CompanyResponse(BaseModel):
         from_attributes = True
 
 
-# ============================================================
-# LETTER SCHEMAS
-# ============================================================
+class CompanyApproveRequest(BaseModel):
+    """Запрос на одобрение компании"""
+    comment: Optional[str] = Field(None, description="Комментарий к одобрению")
+
+
+class CompanyRejectRequest(BaseModel):
+    """Запрос на отклонение компании"""
+    reason: Optional[str] = Field(None, description="Причина отклонения")
+
+
+class PaginatedCompaniesResponse(BaseModel):
+    """Пагинированный список компаний"""
+    data: List[CompanyResponse] = Field(..., description="Список компаний")
+    total: int = Field(..., description="Общее количество компаний")
+    page: int = Field(..., description="Текущая страница")
+    limit: int = Field(..., description="Количество записей на странице")
+
 
 class LetterResponse(BaseModel):
     """Базовая схема ответа для письма"""
@@ -62,10 +72,6 @@ class PaginatedLettersResponse(BaseModel):
     page: int = Field(..., description="Текущая страница")
     limit: int = Field(..., description="Количество записей на странице")
 
-
-# ============================================================
-# EMAIL SCHEMAS
-# ============================================================
 
 class EmailSendRequest(BaseModel):
     """Запрос на отправку письма по email"""
