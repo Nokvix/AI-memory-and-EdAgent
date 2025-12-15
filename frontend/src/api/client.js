@@ -1,23 +1,48 @@
 import { companies, letters, emailStatuses } from './mockData';
 
-const USE_MOCK = true;
+const USE_MOCK = false; // false = Работаем с реальным API (FastAPI)
 const BASE_URL = 'http://localhost:8000/api';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Вспомогательная функция для обработки ошибок
+const handleResponse = async (res) => {
+    if (!res.ok) {
+        let errorMessage = 'Ошибка сервера';
+        try {
+            const errorData = await res.json();
+            errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+            console.error("Не удалось прочитать ошибку:", e);
+        }
+        return { status: 'error', message: errorMessage, error_code: res.status };
+    }
+    return null; // Нет ошибки
+};
+
 export const api = {
-    // Получить Топ-20
+    // GET /api/companies/top-20
     getTopCompanies: async () => {
         if (USE_MOCK) {
             await delay(500);
-            // Сортируем и берем первые 20
             const top20 = [...companies].sort((a, b) => b.score - a.score).slice(0, 20);
             return { status: 'success', data: top20, total: top20.length };
         }
-        const res = await fetch(`${BASE_URL}/companies/top-20`);
-        return res.json();
+
+        try {
+            const res = await fetch(`${BASE_URL}/companies/top-20`);
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data, total: data.length };
+        } catch (error) {
+            console.error(error);
+            return { status: 'error', message: 'Ошибка сети' };
+        }
     },
 
+    // GET /api/companies/{id}
     getCompanyById: async (id) => {
         if (USE_MOCK) {
             await delay(300);
@@ -25,23 +50,27 @@ export const api = {
             if (!company) return { status: 'error', error_code: 'COMPANY_NOT_FOUND', message: 'Компания не найдена' };
             return { status: 'success', data: company };
         }
-        const res = await fetch(`${BASE_URL}/companies/${id}`);
-        return res.json();
+
+        try {
+            const res = await fetch(`${BASE_URL}/companies/${id}`);
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
     },
 
+    // GET /api/companies (Фильтрация и поиск)
     getCompanies: async (params = {}) => {
         if (USE_MOCK) {
             await delay(500);
             let data = [...companies];
-
             if (params.status) data = data.filter(c => c.status === params.status);
             if (params.industry) data = data.filter(c => c.industry === params.industry);
             if (params.min_score) data = data.filter(c => c.score >= params.min_score);
-
-            // Сортировка
-            if (params.sort_by === 'score_desc') data.sort((a, b) => b.score - a.score);
-            if (params.sort_by === 'score_asc') data.sort((a, b) => a.score - b.score);
-
             return {
                 status: 'success',
                 data: data,
@@ -50,11 +79,77 @@ export const api = {
                 limit: params.limit || 20
             };
         }
+
         const query = new URLSearchParams(params).toString();
-        const res = await fetch(`${BASE_URL}/companies?${query}`);
-        return res.json();
+        try {
+            const res = await fetch(`${BASE_URL}/companies?${query}`);
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const json = await res.json();
+            return {
+                status: 'success',
+                data: json.data,
+                total: json.total,
+                page: json.page,
+                limit: json.limit
+            };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
     },
 
+    // POST /api/companies/{id}/approve
+    approveCompany: async (id, comment = "") => {
+        if (USE_MOCK) {
+            await delay(400);
+            const company = companies.find(c => c.id === Number(id));
+            if (company) company.status = 'approved';
+            return { status: 'success', data: company };
+        }
+
+        try {
+            const res = await fetch(`${BASE_URL}/companies/${id}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
+    },
+
+    // POST /api/companies/{id}/reject
+    rejectCompany: async (id, reason = "") => {
+        if (USE_MOCK) {
+            await delay(400);
+            const company = companies.find(c => c.id === Number(id));
+            if (company) company.status = 'rejected';
+            return { status: 'success', data: company };
+        }
+
+        try {
+            const res = await fetch(`${BASE_URL}/companies/${id}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
+    },
+
+    // GET /api/letters/{company_id}
     getLetter: async (companyId) => {
         if (USE_MOCK) {
             await delay(300);
@@ -62,167 +157,120 @@ export const api = {
             if (!letter) return { status: 'success', data: null };
             return { status: 'success', data: letter };
         }
-        const res = await fetch(`${BASE_URL}/letters/${companyId}`);
-        return res.json();
+
+        try {
+            const res = await fetch(`${BASE_URL}/letters/${companyId}`);
+
+            if (res.status === 404) {
+                return { status: 'success', data: null };
+            }
+
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
     },
 
+    // POST /api/letters/generate/{company_id}
     generateLetter: async (companyId, template = 'formal') => {
         if (USE_MOCK) {
             await delay(800);
-            const company = companies.find(c => c.id === Number(companyId));
-            if (!company) return { status: 'error', message: 'Компания не найдена' };
-
-            const newLetter = {
-                id: Date.now(),
-                company_id: Number(companyId),
-                template,
-                subject: `Предложение о партнёрстве для ${company.name}`,
-                body: template === 'formal'
-                    ? `Здравствуйте, коллеги из ${company.name}!\n\nМы изучили ваши вакансии (всего ${company.vacancy_count}) и заметили, что вы используете ${company.main_skills.join(", ")}.\n\nПредлагаем обсудить сотрудничество.`
-                    : `Привет, ${company.name}!\n\nВидим, что вы ищете крутых спецов по ${company.main_skills.join(", ")}. У нас они есть!\n\nДавайте пообщаемся?`,
-                status: 'draft',
-                created_at: new Date().toISOString()
-            };
-
-            letters[companyId] = newLetter;
-            return { status: 'success', data: newLetter, message: 'Письмо сгенерировано' };
+            return { status: 'success', data: {}, message: 'Mock generated' };
         }
-        const res = await fetch(`${BASE_URL}/letters/generate/${companyId}?template=${template}`, { method: 'POST' });
-        return res.json();
+
+        try {
+            const res = await fetch(`${BASE_URL}/letters/generate/${companyId}?template=${template}`, { method: 'POST' });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
+        }
     },
 
-    approveCompany: async (id, comment = "") => {
-        if (USE_MOCK) {
-            await delay(400);
-            const company = companies.find(c => c.id === Number(id));
-            if (company) {
-                company.status = 'approved';
-                company.updated_at = new Date().toISOString();
-            }
-            return { status: 'success', data: company, message: 'Компания одобрена' };
-        }
-        const res = await fetch(`${BASE_URL}/companies/${id}/approve`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comment })
-        });
-        return res.json();
-    },
-
-    rejectCompany: async (id, reason = "") => {
-        if (USE_MOCK) {
-            await delay(400);
-            const company = companies.find(c => c.id === Number(id));
-            if (company) {
-                company.status = 'rejected';
-                company.updated_at = new Date().toISOString();
-            }
-            return { status: 'success', data: company, message: 'Компания отклонена' };
-        }
-        const res = await fetch(`${BASE_URL}/companies/${id}/reject`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason })
-        });
-        return res.json();
-    },
-
+    // POST /api/letters/{letter_id}/approve
     approveLetter: async (letterId, bodyText) => {
-        if (USE_MOCK) {
-            await delay(500);
-            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
+        if (USE_MOCK) { return { status: 'success' }; }
 
-            if (key) {
-                letters[key].status = 'approved';
-                if (bodyText) letters[key].body = bodyText;
-                letters[key].approved_at = new Date().toISOString();
-            }
-            return { status: 'success', data: key ? letters[key] : null, message: 'Письмо одобрено' };
+        try {
+            const res = await fetch(`${BASE_URL}/letters/${letterId}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body: bodyText })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
         }
-        const res = await fetch(`${BASE_URL}/letters/${letterId}/approve`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body: bodyText })
-        });
-        return res.json();
     },
 
+    // POST /api/letters/{letter_id}/reject
     rejectLetter: async (letterId, reason = "") => {
-        if (USE_MOCK) {
-            await delay(300);
-            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
-            if (key) {
-                letters[key].status = 'rejected';
-            }
-            return { status: 'success', data: { id: letterId, status: 'rejected' }, message: 'Письмо отклонено' };
+        if (USE_MOCK) { return { status: 'success' }; }
+
+        try {
+            const res = await fetch(`${BASE_URL}/letters/${letterId}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
         }
-        const res = await fetch(`${BASE_URL}/letters/${letterId}/reject`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason })
-        });
-        return res.json();
     },
 
+    // PUT /api/letters/{letter_id}
     updateLetter: async (letterId, body) => {
-        if (USE_MOCK) {
-            await delay(300);
-            const key = Object.keys(letters).find(k => letters[k].id === Number(letterId));
-            if (key) {
-                letters[key].body = body;
-                letters[key].status = 'draft';
-                letters[key].updated_at = new Date().toISOString();
-                return { status: 'success', data: letters[key], message: 'Письмо обновлено' };
-            }
-            return { status: 'error', message: 'Письмо не найдено' };
+        if (USE_MOCK) { return { status: 'success' }; }
+
+        try {
+            const res = await fetch(`${BASE_URL}/letters/${letterId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
+
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
         }
-        const res = await fetch(`${BASE_URL}/letters/${letterId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ body })
-        });
-        return res.json();
     },
 
+    // POST /api/emails/send/{company_id}
     sendEmail: async (companyId, email) => {
-        if (USE_MOCK) {
-            await delay(1000);
-            const company = companies.find(c => c.id === Number(companyId));
-            const letter = letters[companyId];
+        if (USE_MOCK) { return { status: 'success' }; }
 
-            if (!letter || letter.status !== 'approved') {
-                return { status: 'error', error_code: 'LETTER_NOT_APPROVED', message: 'Письмо не одобрено' };
-            }
+        try {
+            const res = await fetch(`${BASE_URL}/emails/send/${companyId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const error = await handleResponse(res);
+            if (error) return error;
 
-            if (company) company.status = 'sent';
-            if (letter) letter.sent_at = new Date().toISOString();
-
-            emailStatuses[companyId] = {
-                company_id: companyId,
-                email: email || "hr@example.com",
-                sent_at: new Date().toISOString(),
-                delivery_status: "delivered",
-                opened_at: null,
-                clicked_at: null
-            };
-
-            return {
-                status: 'success',
-                data: {
-                    id: 123,
-                    company_id: companyId,
-                    email: email,
-                    sent_at: new Date().toISOString(),
-                    message_id: `mock_id_${Date.now()}`
-                },
-                message: 'Письмо успешно отправлено'
-            };
+            const data = await res.json();
+            return { status: 'success', data: data };
+        } catch (error) {
+            return { status: 'error', message: 'Ошибка сети' };
         }
-        const res = await fetch(`${BASE_URL}/emails/send/${companyId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        return res.json();
     },
 };

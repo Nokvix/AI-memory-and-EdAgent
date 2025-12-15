@@ -71,7 +71,7 @@ export const ApprovedList = () => {
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   HR-менеджер: hr@
-                  {company.url.split("hh.ru")[1] || "example.com"}
+                  {company.url?.split("hh.ru")[1] || "example.com"}
                 </p>
               </div>
 
