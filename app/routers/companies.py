@@ -33,6 +33,7 @@ async def get_top_companies(db: Session = Depends(get_db)):
         CompanyResponse(
             id=company.id,
             name=company.name,
+            url=company.url,
             score=company.score,
             vacancy_count=company.vacancy_count,
             status=company.status,
@@ -212,6 +213,7 @@ async def get_companies(
         CompanyResponse(
             id=company.id,
             name=company.name,
+            url=company.url,
             score=company.score,
             vacancy_count=company.vacancy_count,
             status=company.status,

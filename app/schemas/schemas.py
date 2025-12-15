@@ -6,6 +6,7 @@ from datetime import datetime
 class CompanyResponse(BaseModel):
     id: int
     name: str
+    url: str
     score: float
     vacancy_count: int
     status: str
