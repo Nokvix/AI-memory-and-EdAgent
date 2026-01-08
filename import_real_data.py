@@ -30,8 +30,20 @@ def load_json_data(filename):
     return []
 
 
+def extract_skills_from_vac_list(vac_list):
+    all_skills = []
+    for v in vac_list:
+        skills = v.get("main_skills", [])
+        if isinstance(skills, list):
+            all_skills.extend(skills)
+        elif isinstance(skills, str):
+            all_skills.append(skills)
+    return list(set(all_skills))
+
+
 def import_data():
-    db = SessionLocal()
+    db: Session = SessionLocal()
+
     sj_data = load_json_data("superjob_vacancies.json")
     hh_data = load_json_data("vacancies.json")
 
@@ -43,7 +55,7 @@ def import_data():
 
     print(f"Всего вакансий для обработки: {len(all_vacancies)}")
 
-    companies_map = defaultdict(list)
+    companies_map: dict[str, list[dict]] = defaultdict(list)
 
     for item in all_vacancies:
         raw_name = item.get("company_name")
@@ -59,38 +71,67 @@ def import_data():
         companies_map[comp_name].append(item)
 
     print(f"Найдено уникальных компаний: {len(companies_map)}")
+
+    max_vacancy_count = 0
+    max_skills_possible = 0
+
+    for comp_name, vac_list in companies_map.items():
+        vacancy_count = len(vac_list)
+        unique_skills = extract_skills_from_vac_list(vac_list)
+
+        if vacancy_count > max_vacancy_count:
+            max_vacancy_count = vacancy_count
+
+        skills_count = len(unique_skills)
+        if skills_count > max_skills_possible:
+            max_skills_possible = skills_count
+
+    if max_vacancy_count == 0:
+        max_vacancy_count = 1
+    if max_skills_possible == 0:
+        max_skills_possible = 1
+
+    print(f"max_vacancy_count = {max_vacancy_count}")
+    print(f"max_skills_possible = {max_skills_possible}")
+
     count_new_companies = 0
 
     for comp_name, vac_list in companies_map.items():
-        existing_company = db.query(Company).filter(Company.name == comp_name).first()
+        existing_company = (
+            db.query(Company)
+            .filter(Company.name == comp_name)
+            .first()
+        )
 
         if existing_company:
             company = existing_company
         else:
-            all_skills = []
-            for v in vac_list:
-                skills = v.get("main_skills", [])
-                if isinstance(skills, list):
-                    all_skills.extend(skills)
-                elif isinstance(skills, str):
-                    all_skills.append(skills)
-
-            unique_skills = list(set(all_skills))
+            unique_skills = extract_skills_from_vac_list(vac_list)
             first_vac = vac_list[0]
-            url = first_vac.get("company_url")
-            if not url:
-                url = ""
 
-            score = calculate_score(len(vac_list), len(unique_skills))
+            url = first_vac.get("company_url") or ""
+
+            vacancy_count = len(vac_list)
+            skills_count = len(unique_skills)
+
+            # Здесь как раз второй вариант: передаём keyword-only аргументы
+            score = calculate_score(
+                vacancy_count,
+                skills_count,
+                max_vacancy_count=max_vacancy_count,
+                max_skills_possible=max_skills_possible,
+                company_size_score=0.5,
+                growth_score=0.5,
+            )
 
             company = Company(
                 name=comp_name,
                 url=url,
                 industry="IT / Промышленность / Другое",
-                vacancy_count=len(vac_list),
+                vacancy_count=vacancy_count,
                 main_skills=unique_skills,
                 score=score,
-                status="new"
+                status="new",
             )
             db.add(company)
             db.flush()
@@ -105,13 +146,13 @@ def import_data():
                 company_id=company.id,
                 position=v.get("position", "Не указана"),
                 skills=v.get("main_skills", []),
-                url=vac_url or ""
+                url=vac_url or "",
             )
             db.add(vacancy)
 
     db.commit()
-    print(f"Импорт завершен! Добавлено новых компаний: {count_new_companies}")
     db.close()
+    print(f"Импорт завершен! Добавлено новых компаний: {count_new_companies}")
 
 
 if __name__ == "__main__":
