@@ -2,11 +2,10 @@
 Letter Service - Генерация писем по шаблонам и CRUD операции
 """
 
-import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm import Session
 
 from app.models.models import Letter, Company

@@ -9,7 +9,6 @@ from app.core.database import get_db
 from app.schemas.schemas import EmailSendRequest, EmailStatusResponse
 from app.services import email_service
 
-
 router = APIRouter()
 
 
