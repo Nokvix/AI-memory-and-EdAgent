@@ -1,5 +1,8 @@
 import json
 import os
+import sys
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
 from collections import defaultdict
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
@@ -12,6 +15,8 @@ Base.metadata.create_all(bind=engine)
 def load_json_data(filename):
     possible_paths = [
         filename,
+        f"../parsers/hh/{filename}",
+        f"../parsers/superjob/{filename}",
         f"parsers/hh/{filename}",
         f"parsers/superjob/{filename}"
     ]

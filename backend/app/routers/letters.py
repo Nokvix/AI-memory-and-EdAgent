@@ -15,7 +15,6 @@ from app.schemas.schemas import (
 )
 from app.services import letter_service
 
-
 router = APIRouter()
 
 
