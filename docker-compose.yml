@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ai_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - sqlite_data:/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: ai_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  init-db:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ai_init_db
+    volumes:
+      - sqlite_data:/data
+    command: ["python", "import_real_data.py"]
+    restart: "no"
+
+volumes:
+  sqlite_data:
