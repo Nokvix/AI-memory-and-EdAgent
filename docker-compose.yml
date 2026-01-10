@@ -8,6 +8,8 @@ services:
     container_name: ai_backend
     ports:
       - "8000:8000"
+    volumes:
+      - sqlite_data:/data
 
   frontend:
     build:
@@ -25,7 +27,7 @@ services:
       dockerfile: backend/Dockerfile
     container_name: ai_init_db
     volumes:
-      - sqlite_data:/app/backend
+      - sqlite_data:/data
     command: ["python", "import_real_data.py"]
     restart: "no"
 
